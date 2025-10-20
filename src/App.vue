@@ -17,9 +17,16 @@
             全部
           </el-checkbox>
         </template>
+        <template #default="{ node, data }">
+          <span :class="{ 'hide-checkbox-item': data.value === 7 }">
+            {{ data.label }}
+            <span v-if="data.value === 7" class="custom-icon" @click.stop="handleIconClick">
+              <el-icon :size="18" color="#409efc"><Setting /></el-icon>
+            </span>
+          </span>
+        </template>
         <template #footer>
           <el-button link size="small" @click="handleClear"> 清除 </el-button>
-          <el-button size="small" @click="handleCustomSelect"> 自訂義 </el-button>
         </template>
       </el-cascader>
     </div>
@@ -46,6 +53,7 @@
 
 <script setup>
 import { computed, ref, watch } from 'vue'
+import { Setting } from '@element-plus/icons-vue'
 
 const props = { multiple: true }
 const checkAll = ref(true)
@@ -101,7 +109,31 @@ const options = ref([
     label: '大額玩家',
     children: [{ value: 61, label: '大額玩家上線通知' }],
   },
+  {
+    value: 7,
+    label: '自訂義',
+  },
 ])
+
+const customValues = [
+  [1, 11], // 後台 -> 後台登入失敗
+  [5, 51], // 玩家 -> 黑名單
+  [2, 21], // 遊戲類型 -> 遊戲單日監控
+]
+
+// 輔助函數：檢查路徑是否相等
+const isPathEqual = (path1, path2) => {
+  if (path1.length !== path2.length) return false
+  return path1.every((val, idx) => val === path2[idx])
+}
+
+// 輔助函數：檢查是否為自訂義相關的路徑
+const isCustomRelatedPath = (path) => {
+  // 檢查是否為「自訂義」本身
+  if (path.length === 1 && path[0] === 7) return true
+  // 檢查是否在 customValues 中
+  return customValues.some((cv) => isPathEqual(cv, path))
+}
 
 const getAllValuePaths = computed(() => {
   const result = []
@@ -164,7 +196,7 @@ watch(value, (val, oldVal) => {
       const findLabel = (nodes, targetPath, currentPath = []) => {
         for (const node of nodes) {
           const newPath = [...currentPath, node.value]
-          if (JSON.stringify(newPath) === JSON.stringify(targetPath)) {
+          if (isPathEqual(newPath, targetPath)) {
             return node.label
           }
           if (node.children) {
@@ -204,6 +236,23 @@ watch(value, (val, oldVal) => {
   // 找出移除的項目
   const removedValues = [...oldLeafValues].filter((v) => !currentLeafValues.has(v))
 
+  // 檢查是否勾選了「自定義」選項（value = 7）
+  if (addedValues.includes(7)) {
+    // 執行原本 footer 自定義按鈕的操作
+    value.value = [
+      [7], // 自訂義
+      ...customValues,
+    ]
+    return
+  }
+
+  // 檢查是否取消勾選了「自定義」選項
+  if (removedValues.includes(7)) {
+    // 清掉自訂義相關的勾選
+    value.value = val.filter((path) => !isCustomRelatedPath(path))
+    return
+  }
+
   // 移除「全部」tab（如果存在）
   editableTabs.value = editableTabs.value.filter((tab) => tab.name !== 'all')
 
@@ -215,7 +264,7 @@ watch(value, (val, oldVal) => {
       const findLabel = (nodes, targetPath, currentPath = []) => {
         for (const node of nodes) {
           const newPath = [...currentPath, node.value]
-          if (JSON.stringify(newPath) === JSON.stringify(targetPath)) {
+          if (isPathEqual(newPath, targetPath)) {
             return node.label
           }
           if (node.children) {
@@ -277,14 +326,14 @@ const handleClear = () => {
   value.value = []
 }
 
-const handleCustomSelect = () => {
-  // 自訂義選擇特定項目，例如選擇「自訂義」這個項目
-  // 你可以根據需要修改這裡的路徑
-  value.value = [
-    [7], // 自訂義
-    [1, 11], // 後台 -> 後台登入失敗
-    [5, 51], // 玩家 -> 黑名單
-  ]
+const handleIconClick = () => {
+  // 處理 icon 點擊事件
+  console.log('設定 icon 被點擊了')
+  // 您可以在這裡添加其他操作，例如：
+  // - 打開設定對話框
+  // - 觸發自訂義操作
+  // - 顯示提示訊息
+  alert('點擊了自訂義設定')
 }
 
 const editableTabsValue = ref('all')
@@ -350,5 +399,49 @@ const removeTab = (targetName) => {
     display: flex;
     height: unset;
   }
+}
+
+/* 隱藏「自訂義」選項的 checkbox */
+.el-cascader-node:has(.hide-checkbox-item) .el-checkbox {
+  visibility: hidden;
+}
+
+.el-cascader-node:has(.hide-checkbox-item) .el-cascader-node__label {
+  padding-left: 10px;
+  padding-right: 20px;
+  overflow: visible;
+}
+
+.el-cascader-node:has(.hide-checkbox-item) {
+  overflow: visible;
+}
+
+/* 自訂義選項的 icon 樣式 */
+.el-cascader-node:has(.hide-checkbox-item) .el-cascader-node__postfix {
+  display: none;
+}
+
+.hide-checkbox-item {
+  position: relative;
+  display: inline-block;
+  width: 100%;
+}
+
+.custom-icon {
+  position: absolute;
+  right: -30px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--el-text-color-secondary);
+  z-index: 10;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.custom-icon:hover {
+  transform: translateY(-50%) scale(1.2);
 }
 </style>
