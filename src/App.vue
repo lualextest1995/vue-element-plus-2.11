@@ -81,9 +81,9 @@
 </template>
 
 <script setup>
-import { computed, ref, watch, nextTick, onMounted } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { Setting } from '@element-plus/icons-vue'
-import Sortable from 'sortablejs'
+import { useSortable } from './composables/useSortable'
 
 const props = { multiple: true }
 const checkAll = ref(true)
@@ -408,49 +408,10 @@ const removeTab = (targetName) => {
   })
 }
 
-// 儲存 Sortable 實例
-let sortableInstance = null
-
-// 初始化拖拉排序功能
-const initSortable = () => {
-  nextTick(() => {
-    // 先銷毀舊的實例
-    if (sortableInstance) {
-      sortableInstance.destroy()
-      sortableInstance = null
-    }
-
-    const tabsNav = document.querySelector('.demo-tabs .el-tabs__nav')
-    if (tabsNav) {
-      sortableInstance = Sortable.create(tabsNav, {
-        animation: 150,
-        ghostClass: 'sortable-ghost',
-        dragClass: 'sortable-drag',
-        handle: '.el-tabs__item',
-        filter: '.el-tabs__nav-next, .el-tabs__nav-prev',
-        onEnd: (evt) => {
-          const { oldIndex, newIndex } = evt
-          if (oldIndex !== undefined && newIndex !== undefined && oldIndex !== newIndex) {
-            const movedTab = editableTabs.value.splice(oldIndex, 1)[0]
-            editableTabs.value.splice(newIndex, 0, movedTab)
-          }
-        },
-      })
-    }
-  })
-}
-
-// 監聽 tabs 變化，重新初始化拖拉功能
-watch(
-  () => editableTabs.value.length,
-  () => {
-    initSortable()
-  }
-)
-
-// 元件掛載時初始化
-onMounted(() => {
-  initSortable()
+// 使用拖拉排序 hook - 簡單到白痴都能用
+useSortable('.demo-tabs .el-tabs__nav', editableTabs, {
+  handle: '.el-tabs__item',
+  filter: '.el-tabs__nav-next, .el-tabs__nav-prev, .el-icon, [class*="icon-close"]',
 })
 </script>
 
@@ -491,6 +452,13 @@ onMounted(() => {
   .el-tabs__item {
     cursor: move !important;
     user-select: none;
+
+    // 關閉按鈕要顯示 pointer，不是 move
+    .is-icon-close,
+    .el-icon-close,
+    [class*="icon-close"] {
+      cursor: pointer !important;
+    }
   }
 }
 
