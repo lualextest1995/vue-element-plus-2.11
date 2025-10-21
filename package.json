@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "element-plus": "^2.11.5",
+    "sortablejs": "^1.15.6",
     "vue": "^3.5.22"
   },
   "devDependencies": {

@@ -81,8 +81,9 @@
 </template>
 
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, ref, watch, nextTick, onMounted } from 'vue'
 import { Setting } from '@element-plus/icons-vue'
+import Sortable from 'sortablejs'
 
 const props = { multiple: true }
 const checkAll = ref(true)
@@ -406,6 +407,51 @@ const removeTab = (targetName) => {
     return pathLeafValue !== leafValue
   })
 }
+
+// 儲存 Sortable 實例
+let sortableInstance = null
+
+// 初始化拖拉排序功能
+const initSortable = () => {
+  nextTick(() => {
+    // 先銷毀舊的實例
+    if (sortableInstance) {
+      sortableInstance.destroy()
+      sortableInstance = null
+    }
+
+    const tabsNav = document.querySelector('.demo-tabs .el-tabs__nav')
+    if (tabsNav) {
+      sortableInstance = Sortable.create(tabsNav, {
+        animation: 150,
+        ghostClass: 'sortable-ghost',
+        dragClass: 'sortable-drag',
+        handle: '.el-tabs__item',
+        filter: '.el-tabs__nav-next, .el-tabs__nav-prev',
+        onEnd: (evt) => {
+          const { oldIndex, newIndex } = evt
+          if (oldIndex !== undefined && newIndex !== undefined && oldIndex !== newIndex) {
+            const movedTab = editableTabs.value.splice(oldIndex, 1)[0]
+            editableTabs.value.splice(newIndex, 0, movedTab)
+          }
+        },
+      })
+    }
+  })
+}
+
+// 監聽 tabs 變化，重新初始化拖拉功能
+watch(
+  () => editableTabs.value.length,
+  () => {
+    initSortable()
+  }
+)
+
+// 元件掛載時初始化
+onMounted(() => {
+  initSortable()
+})
 </script>
 
 <style lang="scss">
@@ -438,5 +484,22 @@ const removeTab = (targetName) => {
       }
     }
   }
+}
+
+// 拖拉排序樣式
+.demo-tabs {
+  .el-tabs__item {
+    cursor: move !important;
+    user-select: none;
+  }
+}
+
+.sortable-ghost {
+  opacity: 0.4;
+}
+
+.sortable-drag {
+  opacity: 0.8;
+  background: #f0f9ff;
 }
 </style>
