@@ -18,12 +18,41 @@
           </el-checkbox>
         </template>
         <template #default="{ node, data }">
-          <span :class="{ 'hide-checkbox-item': data.value === 7 }">
-            {{ data.label }}
-            <span v-if="data.value === 7" class="custom-icon" @click.stop="handleIconClick">
-              <el-icon :size="18" color="#409efc"><Setting /></el-icon>
-            </span>
+          <span v-if="data.value === 7">
+            <span>{{ data.label }}</span>
+            <el-icon :size="16" class="custom-icon" @click.stop="handleIconClick">
+              <Setting />
+            </el-icon>
           </span>
+          <span v-else>{{ data.label }}</span>
+        </template>
+        <template #footer>
+          <el-button link size="small" @click="handleClear"> 清除 </el-button>
+        </template>
+      </el-cascader>
+      <el-cascader
+        v-model="value"
+        :options="options"
+        :props="props"
+        collapse-tags
+        collapse-tags-tooltip
+        :max-collapse-tags="2"
+        clearable
+        style="width: 400px"
+      >
+        <template #header>
+          <el-checkbox v-model="checkAll" :indeterminate="indeterminate" @change="handleCheckAll">
+            全部
+          </el-checkbox>
+        </template>
+        <template #default="{ node, data }">
+          <span v-if="data.value === 7">
+            <span>{{ data.label }}</span>
+            <el-icon :size="16" class="custom-icon" @click.stop="handleIconClick">
+              <Setting />
+            </el-icon>
+          </span>
+          <span v-else>{{ data.label }}</span>
         </template>
         <template #footer>
           <el-button link size="small" @click="handleClear"> 清除 </el-button>
@@ -379,69 +408,35 @@ const removeTab = (targetName) => {
 }
 </script>
 
-<style>
-.demo {
-  display: flex;
-  flex-direction: column;
-}
-
-.demo > div {
-  flex: 1;
-  text-align: center;
-}
-
-.demo > div:not(:last-child) {
-  border-right: 1px solid var(--el-border-color);
-}
-
-.custom-header {
-  .el-checkbox {
-    display: flex;
-    height: unset;
+<style lang="scss">
+// 使用自定義的 popper-class="custom-header" 來限定作用範圍，避免污染其他 cascader 組件
+.custom-header.el-cascader__dropdown {
+  .el-cascader-panel {
+    .el-cascader-menu:first-child {
+      .el-cascader-node:last-child {
+        .el-cascader-node__label {
+          padding-left: 10px;
+          padding-right: 20px;
+          overflow: visible;
+        }
+        .el-checkbox {
+          visibility: hidden !important;
+        }
+        .custom-icon {
+          position: absolute;
+          right: 10px;
+          top: 50%;
+          transform: translateY(-50%);
+          z-index: 10;
+          cursor: pointer;
+          transition: transform 0.2s;
+          &:hover {
+            transform: translateY(-50%) scale(1.1);
+            color: #409efc;
+          }
+        }
+      }
+    }
   }
-}
-
-/* 隱藏「自訂義」選項的 checkbox */
-.el-cascader-node:has(.hide-checkbox-item) .el-checkbox {
-  visibility: hidden;
-}
-
-.el-cascader-node:has(.hide-checkbox-item) .el-cascader-node__label {
-  padding-left: 10px;
-  padding-right: 20px;
-  overflow: visible;
-}
-
-.el-cascader-node:has(.hide-checkbox-item) {
-  overflow: visible;
-}
-
-/* 自訂義選項的 icon 樣式 */
-.el-cascader-node:has(.hide-checkbox-item) .el-cascader-node__postfix {
-  display: none;
-}
-
-.hide-checkbox-item {
-  position: relative;
-  display: inline-block;
-  width: 100%;
-}
-
-.custom-icon {
-  position: absolute;
-  right: -30px;
-  top: 50%;
-  transform: translateY(-50%);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--el-text-color-secondary);
-  z-index: 10;
-  cursor: pointer;
-  transition: transform 0.2s;
-}
-
-.custom-icon:hover {
-  transform: translateY(-50%) scale(1.2);
 }
 </style>
