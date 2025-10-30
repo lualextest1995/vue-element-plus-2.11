@@ -1,6 +1,7 @@
 <template>
   <div class="demo">
     <div>
+      {{ value }}
       <el-cascader
         v-model="value"
         popper-class="custom-header"
@@ -19,35 +20,7 @@
         </template>
         <template #default="{ node, data }">
           <span v-if="data.value === 7">
-            <span>{{ data.label }}</span>
-            <el-icon :size="16" class="custom-icon" @click.stop="handleIconClick">
-              <Setting />
-            </el-icon>
-          </span>
-          <span v-else>{{ data.label }}</span>
-        </template>
-        <template #footer>
-          <el-button link size="small" @click="handleClear"> 清除 </el-button>
-        </template>
-      </el-cascader>
-      <el-cascader
-        v-model="value"
-        :options="options"
-        :props="props"
-        collapse-tags
-        collapse-tags-tooltip
-        :max-collapse-tags="2"
-        clearable
-        style="width: 400px"
-      >
-        <template #header>
-          <el-checkbox v-model="checkAll" :indeterminate="indeterminate" @change="handleCheckAll">
-            全部
-          </el-checkbox>
-        </template>
-        <template #default="{ node, data }">
-          <span v-if="data.value === 7">
-            <span>{{ data.label }}</span>
+            <button @click="handleCustomClick">{{ data.label }}</button>
             <el-icon :size="16" class="custom-icon" @click.stop="handleIconClick">
               <Setting />
             </el-icon>
@@ -88,6 +61,12 @@ import { useSortable } from './composables/useSortable'
 const props = { multiple: true }
 const checkAll = ref(true)
 const indeterminate = ref(false)
+
+const customValues = [
+  [1, 11], // 後台 -> 後台登入失敗
+  [5, 51], // 玩家 -> 黑名單
+  [2, 21], // 遊戲類型 -> 遊戲單日監控
+]
 
 const options = ref([
   {
@@ -142,27 +121,14 @@ const options = ref([
   {
     value: 7,
     label: '自訂義',
+    disabled: true,
   },
 ])
-
-const customValues = [
-  [1, 11], // 後台 -> 後台登入失敗
-  [5, 51], // 玩家 -> 黑名單
-  [2, 21], // 遊戲類型 -> 遊戲單日監控
-]
 
 // 輔助函數：檢查路徑是否相等
 const isPathEqual = (path1, path2) => {
   if (path1.length !== path2.length) return false
   return path1.every((val, idx) => val === path2[idx])
-}
-
-// 輔助函數：檢查是否為自訂義相關的路徑
-const isCustomRelatedPath = (path) => {
-  // 檢查是否為「自訂義」本身
-  if (path.length === 1 && path[0] === 7) return true
-  // 檢查是否在 customValues 中
-  return customValues.some((cv) => isPathEqual(cv, path))
 }
 
 const getAllValuePaths = computed(() => {
@@ -186,7 +152,7 @@ const getAllValuePaths = computed(() => {
 })
 
 // 預設勾選全部
-const value = ref(getAllValuePaths.value)
+const value = ref([])
 
 watch(value, (val, oldVal) => {
   if (val.length === 0) {
@@ -266,23 +232,6 @@ watch(value, (val, oldVal) => {
   // 找出移除的項目
   const removedValues = [...oldLeafValues].filter((v) => !currentLeafValues.has(v))
 
-  // 檢查是否勾選了「自定義」選項（value = 7）
-  if (addedValues.includes(7)) {
-    // 執行原本 footer 自定義按鈕的操作
-    value.value = [
-      [7], // 自訂義
-      ...customValues,
-    ]
-    return
-  }
-
-  // 檢查是否取消勾選了「自定義」選項
-  if (removedValues.includes(7)) {
-    // 清掉自訂義相關的勾選
-    value.value = val.filter((path) => !isCustomRelatedPath(path))
-    return
-  }
-
   // 移除「全部」tab（如果存在）
   editableTabs.value = editableTabs.value.filter((tab) => tab.name !== 'all')
 
@@ -356,6 +305,11 @@ const handleClear = () => {
   value.value = []
 }
 
+const handleCustomClick = () => {
+  // 點擊自訂義按鈕，勾選 customValues 中的所有選項
+  value.value = [...customValues]
+}
+
 const handleIconClick = () => {
   // 處理 icon 點擊事件
   console.log('設定 icon 被點擊了')
@@ -421,13 +375,32 @@ useSortable('.demo-tabs .el-tabs__nav', editableTabs, {
   .el-cascader-panel {
     .el-cascader-menu:first-child {
       .el-cascader-node:last-child {
+        cursor: default !important;
         .el-cascader-node__label {
           padding-left: 10px;
           padding-right: 20px;
           overflow: visible;
+          cursor: default !important;
         }
         .el-checkbox {
           visibility: hidden !important;
+        }
+        button {
+          background: none;
+          border: none;
+          padding: 0;
+          font: inherit;
+          color: var(--el-text-color-regular);
+          cursor: pointer !important;
+          text-align: left;
+          position: relative;
+          z-index: 10;
+          &:hover {
+            color: var(--el-text-color-regular);
+          }
+          &:focus {
+            outline: none;
+          }
         }
         .custom-icon {
           position: absolute;
@@ -456,7 +429,7 @@ useSortable('.demo-tabs .el-tabs__nav', editableTabs, {
     // 關閉按鈕要顯示 pointer，不是 move
     .is-icon-close,
     .el-icon-close,
-    [class*="icon-close"] {
+    [class*='icon-close'] {
       cursor: pointer !important;
     }
   }
